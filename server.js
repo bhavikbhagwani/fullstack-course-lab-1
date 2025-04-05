@@ -1,17 +1,24 @@
 import express from 'express'
 import dotenv from 'dotenv'
 dotenv.config()
-import connectToMongoDB from "./src/db/connect.js";
+import { client, connectToMongoDB} from "./src/db/connect.js";
+import { router as dishesRouter } from './src/routes/dishesRoute.js';
+import { globalErrorHandler, notFoundErrorHandler } from './src/middleware/errorHandler.js';
 
-const PORT = 3001 || process.env.PORT
+const PORT = process.env.PORT || 3001;
 
 const app = express()
 
 app.use(express.json());
 
+app.use('/', dishesRouter)
 
+app.use(notFoundErrorHandler)
 
+app.use(globalErrorHandler)
+
+connectToMongoDB()
 app.listen(PORT, () => {
-    connectToMongoDB()
     console.log(`Server is running on port ${PORT}`)
 })
+
