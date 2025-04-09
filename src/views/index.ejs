@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 1 - Dishes</title>
+    <link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <h1>Dishes List</h1>
+    <table id="dishesTable" border="1">
+        <thead>
+            <tr>
+                <th class="table-header">ID</th>
+                <th class="table-header">Name</th>
+                <th class="table-header">Ingredients</th>
+                <th class="table-header">Steps</th>
+                <th class="table-header">Cooking Time</th>
+                <th class="table-header">Origin</th>
+                <th class="table-header">Difficulty</th>
+                <th class="table-header">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dishes will be dynamically inserted here -->
+        </tbody>
+    </table>
+
+     <!-- Update Dish Form (Hidden by default) -->
+     <div id="updateForm" class="hidden-form">
+        <h2 id="updateDishHeading">Update Dish</h2>
+        <form id="updateDishForm">
+            
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name">
+            </div>
+        
+            <div class="form-group">
+                <label for="ingredients">Ingredients (separate with a comma (,)):</label>
+                <input type="text" id="ingredients" name="ingredients">
+            </div>
+        
+            <div class="form-group">
+                <label for="cookingTime">Cooking Time (mins):</label>
+                <input id="cookingTime" name="cookingTime">
+            </div>
+        
+            <div class="form-group">
+                <label for="origin">Origin:</label>
+                <input type="text" id="origin" name="origin">
+            </div>
+        
+            <div class="form-group">
+                <label for="difficulty">Difficulty:</label>
+                <input type="text" id="difficulty" name="difficulty">
+            </div>
+        
+            <div class="form-group">
+                <label for="preparationsSteps">Steps (each new line is a step):</label>
+                <textarea id="preparationsSteps" name="preparationsSteps"></textarea>
+            </div>
+        
+            <div class="form-group">
+                <button type="submit">Save Changes</button>
+            </div>
+            <div class="form-group">
+                <button type="button" id="cancelButton" onclick="cancelUpdate()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+
+        let isDishSelectedForUpdating = false
+        let currentDishId = null;
+
+        // Update dish function
+        function updateDish(id) {
+            if (!isDishSelectedForUpdating){
+                isDishSelectedForUpdating = true
+                currentDishId = id;
+
+                const updateDishHeading = document.getElementById("updateDishHeading")
+                updateDishHeading.textContent = `Update Dish with ID ${id}`;
+
+                const updateFormContainer = document.getElementById("updateForm");
+                updateFormContainer.classList.remove("hidden-form");
+            } else{
+                alert('You are already updating a dish, click Cancel to update a new dish')
+            }
+            
+        }
+
+        async function deleteDish(id) {
+            if (confirm(`Are you sure you want to delete the dish with ID ${id}?`)) {
+                try {
+                    const response = await fetch(`/api/dishes/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        alert('Dish deleted!');
+                        fetchDishes();
+                    } else {
+                        alert('Failed to delete dish');
+                    }
+                } catch (error) {
+                    console.error('Error deleting dish:', error);
+                    alert('Error deleting dish');
+                }
+            }
+        }
+
+        function cancelUpdate() {
+            isDishSelectedForUpdating = false
+            currentDishId = null;
+
+            const updateFormContainer = document.getElementById("updateForm");
+            updateFormContainer.classList.add("hidden-form");
+        }
+
+
+        
+        async function fetchDishes() {
+            try {
+                const response = await fetch('/api/dishes');
+                const dishes = await response.json();
+
+                const dishesTableBody = document.querySelector("#dishesTable tbody");
+                dishesTableBody.innerHTML = "";
+
+                dishes.forEach(dish => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${dish._id}</td>
+                        <td>${dish.name}</td>
+                        <td>${dish.ingredients.join('<br>')}</td>
+                        <td>
+                            ${dish.preparationsSteps.join('<br>')}
+                        </td>
+                        <td>${dish.cookingTime} mins</td>
+                        <td>${dish.origin}</td>
+                        <td>${dish.difficulty}</td>
+                        <td>
+                            <button onclick="updateDish('${dish._id}')">Update</button>
+                            <button onclick="deleteDish('${dish._id}')">Delete</button>
+                        </td>
+                    `;
+                    
+                    dishesTableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error fetching dishes:", error);
+            }
+        }
+
+
+        document.getElementById("updateDishForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const updatedDish = {
+                name: document.getElementById("name").value,
+                ingredients: document.getElementById("ingredients").value.split(',').map(i => i.trim()),
+                cookingTime: document.getElementById("cookingTime").value,
+                origin: document.getElementById("origin").value,
+                difficulty: document.getElementById("difficulty").value,
+                preparationsSteps: document.getElementById("preparationsSteps").value.split('\n').map(s => s.trim())
+            };
+
+            try {
+                const response = await fetch(`/api/dishes/${currentDishId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(updatedDish)
+                });
+
+                if (response.ok) {
+                    alert("Dish updated successfully");
+                    document.getElementById("updateForm").classList.add("hidden-form");
+                    document.getElementById("updateDishForm").reset();
+                    isDishSelectedForUpdating = false;
+                    currentDishId = null;
+                    fetchDishes();
+                } else {
+                    alert("Failed to update dish");
+                }
+            } catch (error) {
+                console.error("Error updating dish:", error);
+            }
+        });
+
+
+        
+        window.onload = fetchDishes;
+    </script>
+</body>
+</html>
