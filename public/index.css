@@ -13,6 +13,17 @@ th, td {
     text-align: left;
 }
 
+.steps-header {
+    width: 450px;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
 .hidden-form{
     display: none;
 }

@@ -14,7 +14,7 @@
                 <th class="table-header">ID</th>
                 <th class="table-header">Name</th>
                 <th class="table-header">Ingredients</th>
-                <th class="table-header">Steps</th>
+                <th class="table-header steps-header">Steps</th>
                 <th class="table-header">Cooking Time</th>
                 <th class="table-header">Origin</th>
                 <th class="table-header">Difficulty</th>
@@ -25,6 +25,8 @@
             <!-- Dishes will be dynamically inserted here -->
         </tbody>
     </table>
+
+    
 
      <!-- Update Dish Form (Hidden by default) -->
      <div id="updateForm" class="hidden-form">
@@ -57,7 +59,7 @@
             </div>
         
             <div class="form-group">
-                <label for="preparationsSteps">Steps (each new line is a step):</label>
+                <label for="preparationsSteps">Steps (each new line (\n or ENTER) is a step):</label>
                 <textarea id="preparationsSteps" name="preparationsSteps"></textarea>
             </div>
         
@@ -75,20 +77,41 @@
         let isDishSelectedForUpdating = false
         let currentDishId = null;
 
-        // Update dish function
-        function updateDish(id) {
-            if (!isDishSelectedForUpdating){
-                isDishSelectedForUpdating = true
-                currentDishId = id;
-
-                const updateDishHeading = document.getElementById("updateDishHeading")
-                updateDishHeading.textContent = `Update Dish with ID ${id}`;
-
-                const updateFormContainer = document.getElementById("updateForm");
-                updateFormContainer.classList.remove("hidden-form");
-            } else{
-                alert('You are already updating a dish, click Cancel to update a new dish')
+        async function updateDish(id, encodedName) {
+            if (isDishSelectedForUpdating){
+                alert('You are already updating a dish, click Cancel in the form below the table to update a new dish')
+                return
             }
+            
+            isDishSelectedForUpdating = true
+            currentDishId = id;
+
+            const name = decodeURIComponent(encodedName);
+
+            const updateDishHeading = document.getElementById("updateDishHeading")
+            updateDishHeading.textContent = `Update Dish with ID ${id}: ${name}`;
+
+            const updateFormContainer = document.getElementById("updateForm");
+            updateFormContainer.classList.remove("hidden-form");
+
+            try{
+                const response = await fetch(`/api/dishes/${encodeURIComponent(name)}`)
+                const dish = await response.json()
+
+                document.getElementById("name").value = dish.name
+                document.getElementById("ingredients").value = dish.ingredients.join(",")
+                document.getElementById("cookingTime").value = dish.cookingTime
+                document.getElementById("origin").value = dish.origin
+                document.getElementById("difficulty").value = dish.difficulty
+                document.getElementById("preparationsSteps").value = dish.preparationsSteps.join("\n")
+
+                
+            } catch (error){
+                console.error("Failed to fetch dish by name:", error);
+                alert("Failed to fetch dish details");
+            }
+
+            
             
         }
 
@@ -146,9 +169,11 @@
                         <td>${dish.cookingTime} mins</td>
                         <td>${dish.origin}</td>
                         <td>${dish.difficulty}</td>
-                        <td>
-                            <button onclick="updateDish('${dish._id}')">Update</button>
-                            <button onclick="deleteDish('${dish._id}')">Delete</button>
+                        <td class="buttons-cell">
+                            <div class="button-container">
+                                <button onclick="updateDish('${dish._id}', '${encodeURIComponent(dish.name)}')">Update</button>
+                                <button onclick="deleteDish('${dish._id}')">Delete</button>
+                            </div>
                         </td>
                     `;
                     
