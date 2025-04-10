@@ -18,12 +18,10 @@ const PORT = process.env.PORT || 3001;
 
 const app = express()
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'src', 'views'));
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-    res.render('index');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.use(express.json());
