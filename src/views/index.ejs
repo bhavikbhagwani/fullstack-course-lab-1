@@ -26,11 +26,13 @@
         </tbody>
     </table>
 
-    
+    <button class="add-button" onclick="addDish()">Add New Dish</button>
+
+
 
      <!-- Update Dish Form (Hidden by default) -->
      <div id="updateForm" class="hidden-form">
-        <h2 id="updateDishHeading">Update Dish</h2>
+        <h2 id="updateDishHeading"></h2>
         <form id="updateDishForm">
             
             <div class="form-group">
@@ -77,6 +79,8 @@
         let isDishSelectedForUpdating = false
         let currentDishId = null;
 
+        let addDishOptionSelected = false
+
         async function updateDish(id, encodedName) {
             if (isDishSelectedForUpdating){
                 alert('You are already updating a dish, click Cancel in the form below the table to update a new dish')
@@ -114,9 +118,27 @@
             
             
         }
+        async function addDish() {
+            if (isDishSelectedForUpdating){
+                alert('You are already updating a dish, click Cancel in the form below the table to add a new dish')
+                return
+            }
 
-        async function deleteDish(id) {
-            if (confirm(`Are you sure you want to delete the dish with ID ${id}?`)) {
+            addDishOptionSelected = true
+
+            const updateDishHeading = document.getElementById("updateDishHeading")
+            updateDishHeading.textContent = `Add Dish`;
+
+            const updateFormContainer = document.getElementById("updateForm");
+            updateFormContainer.classList.remove("hidden-form");
+        
+        }
+
+
+        async function deleteDish(id, encodedName) {
+            const name = decodeURIComponent(encodedName);
+
+            if (confirm(`Are you sure you want to delete the dish with ID ${id}: ${name}?`)) {
                 try {
                     const response = await fetch(`/api/dishes/${id}`, {
                         method: 'DELETE',
@@ -172,7 +194,7 @@
                         <td class="buttons-cell">
                             <div class="button-container">
                                 <button onclick="updateDish('${dish._id}', '${encodeURIComponent(dish.name)}')">Update</button>
-                                <button onclick="deleteDish('${dish._id}')">Delete</button>
+                                <button onclick="deleteDish('${dish._id}' , '${encodeURIComponent(dish.name)}')">Delete</button>
                             </div>
                         </td>
                     `;
@@ -188,42 +210,111 @@
         document.getElementById("updateDishForm").addEventListener("submit", async function(event) {
             event.preventDefault();
 
-            const updatedDish = {
-                name: document.getElementById("name").value,
-                ingredients: document.getElementById("ingredients").value.split(',').map(i => i.trim()),
-                cookingTime: document.getElementById("cookingTime").value,
-                origin: document.getElementById("origin").value,
-                difficulty: document.getElementById("difficulty").value,
-                preparationsSteps: document.getElementById("preparationsSteps").value.split('\n').map(s => s.trim())
-            };
+            // Make sure the required fields are filled
+            const name = document.getElementById("name").value;
+            const ingredients = document.getElementById("ingredients").value.split(',').map(i => i.trim());
+            const cookingTime = document.getElementById("cookingTime").value;
+            const origin = document.getElementById("origin").value;
+            const difficulty = document.getElementById("difficulty").value;
+            const preparationsSteps = document.getElementById("preparationsSteps").value.split('\n').map(s => s.trim());
 
-            try {
-                const response = await fetch(`/api/dishes/${currentDishId}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(updatedDish)
-                });
+            const cookingTimeInt = parseInt(cookingTime, 10);
 
-                if (response.ok) {
-                    alert("Dish updated successfully");
-                    document.getElementById("updateForm").classList.add("hidden-form");
-                    document.getElementById("updateDishForm").reset();
-                    isDishSelectedForUpdating = false;
-                    currentDishId = null;
-                    fetchDishes();
-                } else {
-                    alert("Failed to update dish");
-                }
-            } catch (error) {
-                console.error("Error updating dish:", error);
+            if (!name || !ingredients.length || !cookingTimeInt || !origin || !difficulty || !preparationsSteps.length) {
+                alert("All fields must be filled out.");
+                return;
             }
+
+            if (addDishOptionSelected) {
+
+                const nextId = await getNextIdForDish()
+
+                const addDish = {
+                    id: nextId, name, ingredients, cookingTime: cookingTimeInt, origin, difficulty, preparationsSteps
+                };
+
+                console.log('adding the dish: ', addDish)
+
+                try {
+                    const response = await fetch(`/api/dishes/`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(addDish)
+                    });
+
+                    if (response.ok) {
+                        alert("Dish added successfully");
+                        document.getElementById("updateForm").classList.add("hidden-form");
+                        document.getElementById("updateDishForm").reset();
+                        addDishOptionSelected = false;
+                        fetchDishes();
+                    } else {
+                        alert(`Failed to add dish`);
+                    }
+                } catch (error) {
+                    console.error("Error adding dish:", error);
+                }
+
+            } else if (isDishSelectedForUpdating) {
+                // Update existing dish
+                const updatedDish = {
+                    name, ingredients, cookingTime, origin, difficulty, preparationsSteps
+                };
+
+                try {
+                    const response = await fetch(`/api/dishes/${currentDishId}`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(updatedDish)
+                    });
+
+                    if (response.ok) {
+                        alert("Dish updated successfully");
+                        document.getElementById("updateForm").classList.add("hidden-form");
+                        document.getElementById("updateDishForm").reset();
+                        isDishSelectedForUpdating = false;  // Reset flag
+                        currentDishId = null;  // Clear current dish ID
+                        fetchDishes();  // Fetch updated dishes
+                    } else {
+                        alert(`Failed to update dish:`);
+                    }
+                } catch (error) {
+                    console.error("Error updating dish:", error);
+                }
+            }
+
+            
         });
 
 
         
         window.onload = fetchDishes;
+
+        async function getNextIdForDish() {
+            try {
+                const response = await fetch('/api/dishes');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch dishes');
+                }
+
+                const dishes = await response.json();
+                const ids = dishes.map(dish => parseInt(dish._id));
+                const largestId = Math.max(...ids);
+                const nextId = largestId + 1;
+
+                return nextId.toString();
+            } catch (error) {
+                console.error("Error fetching dishes or calculating next ID:", error);
+                return null; // or handle the error accordingly
+            }
+        }
+
+
     </script>
 </body>
 </html>

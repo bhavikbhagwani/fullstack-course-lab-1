@@ -1,29 +1,26 @@
-import { client } from "../db/connect.js";
+import Dish from "../schemas/dishesSchema.js";
 
 class DishesModel{
 
     async createDish(dishObject){
 
         try{
-            const db = client.db("lab1db");
-            const dishesCollection = db.collection("dish");
-    
-            const result = await dishesCollection.insertOne(dishObject)
-    
+            const newDish = new Dish(dishObject)
+            const result = await newDish.save()
             return result
+            
         } catch(error){
             console.error('Error in createDish model: ', error);
         }
         
     }
     async getDishes(){
-
+        
         try{
-            const db = client.db("lab1db");
-            const dishesCollection = db.collection("dish");
-    
-            const result = await dishesCollection.find({}).toArray()
+            
+            const result = await Dish.find({})
             return result
+
         } catch(error){
             console.error('Error in getDishes model: ', error);
         }
@@ -32,12 +29,11 @@ class DishesModel{
     async getDishesByName(dishName){
 
         try{
-            const db = client.db("lab1db");
-            const dishesCollection = db.collection("dish");
+            
     
-            const result = await dishesCollection.findOne({name: dishName})
-
+            const result = await Dish.findOne({name: dishName})
             return result
+
         } catch(error){
             console.error('Error in getDishesByName model: ', error);
         }
@@ -46,15 +42,10 @@ class DishesModel{
     async updateDish(id, dishObject){
 
         try{
-            const db = client.db("lab1db");
-            const dishesCollection = db.collection("dish");
     
-            const result = await dishesCollection.updateOne(
-                {_id: id},
-                { $set: dishObject}
-            )
+            const result = await Dish.findByIdAndUpdate(id, dishObject, {new: true})
+            return result
 
-            return result.matchedCount
         } catch(error){
             console.error('Error in updateDish model: ', error);
         }
@@ -63,12 +54,9 @@ class DishesModel{
     async deleteDish(id){
 
         try{
-            const db = client.db("lab1db");
-            const dishesCollection = db.collection("dish");
 
-            const result = await dishesCollection.deleteOne({_id: id})
-
-            return result.deletedCount
+            const result = await Dish.findOneAndDelete({_id: id})
+            return result
     
             
         } catch(error){

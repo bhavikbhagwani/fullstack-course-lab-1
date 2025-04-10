@@ -24,6 +24,17 @@ th, td {
     gap: 10px;
 }
 
+.add-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: rgb(14, 185, 14);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
 .hidden-form{
     display: none;
 }

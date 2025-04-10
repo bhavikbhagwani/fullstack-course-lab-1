@@ -11,7 +11,7 @@ class DishesController{
 
             const {id, name, ingredients, preparationsSteps, cookingTime, origin, difficulty} = req.body
             
-            if (!id || !name || !ingredients || !preparationsSteps || !cookingTime || !origin) {
+            if (!id || !name || !ingredients || !preparationsSteps || !cookingTime || !origin || !difficulty) {
                 return res.status(400).json({ message: 'Missing required fields' });
             }
 
@@ -21,11 +21,6 @@ class DishesController{
 
             const dishObject = { _id: id, name, ingredients, preparationsSteps, cookingTime, origin, difficulty };
             const result = await dishesModel.createDish(dishObject)
-
-
-            if (!result || !result.acknowledged || !result.insertedId) {
-                return res.status(500).json({ message: 'Failed to create dish' });
-            }
             
             res.status(201).json({ message: 'Dish created successfully' });
             
@@ -103,7 +98,7 @@ class DishesController{
             const result = await dishesModel.updateDish(id, dishObject)
 
         
-            if (result === 0){
+            if (!result){
                 return res.status(404).json({ message: `No dish found with the id: ${id}`});
             }
 
@@ -127,11 +122,12 @@ class DishesController{
 
             const result = await dishesModel.deleteDish(id)
 
-            if (result === 1){
-                res.status(200).json({message: `Dish with ${id} deleted succesfully`})
-            } else{
+            if (!result){
                 return res.status(404).json({ message: `No dish found with the id: ${id}`});
+                
             }
+            
+            res.status(200).json({message: `Dish with ${id} deleted succesfully`})
             
 
         } catch (error){
