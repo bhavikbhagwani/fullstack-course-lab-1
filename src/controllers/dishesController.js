@@ -3,8 +3,10 @@ import dishesModel from "../models/dishesModel.js"
 
 class DishesController{
 
-    
-    
+    // controller class that defines methods (handlers) for processing requests
+    // related to dishes (creating, updating, retrieving, and deleting dishes)
+    // , executed when corresponding routes are accessed.
+        
     async createDish(req, res){
 
         try{
@@ -19,14 +21,18 @@ class DishesController{
                 return res.status(400).json({ message: 'Id must be a string' });
             }
 
+            // check if the dish with the same name already exists:
+            const nameExistsResult = await dishesModel.getDishesByName(name)
+
+            if (nameExistsResult){
+                return res.status(409).json({ message: `Dish with the name '${name}' already exists`});
+            }
+
             const dishObject = { _id: id, name, ingredients, preparationsSteps, cookingTime, origin, difficulty };
             const result = await dishesModel.createDish(dishObject)
             
             res.status(201).json({ message: 'Dish created successfully' });
             
-    
-            
-
         } catch (error){
             console.error('Error in createDish controller: ', error)
             res.status(500).json({error: 'Internal Server Error'})
@@ -39,7 +45,7 @@ class DishesController{
 
             const result = await dishesModel.getDishes()
 
-        
+            // check if dishes retrieved is empty
             if (result.length === 0 ){
                 return res.status(404).json({ message: 'No dishes found'});
             }
@@ -64,7 +70,6 @@ class DishesController{
             }
 
             const result = await dishesModel.getDishesByName(name)
-
         
             if (!result){
                 return res.status(404).json({ message: `No dish found with the name: ${name}`});

@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+
+// defining the schema for the Dish
+
 const dishesSchema = new mongoose.Schema({
     _id: {
         type: String,
@@ -31,5 +34,6 @@ const dishesSchema = new mongoose.Schema({
     }
 });
 
+// creating the 'Dish' model using the schema and allowing it to be used in other parts of the application
 const Dish = mongoose.model('Dish', dishesSchema);
 export default Dish;

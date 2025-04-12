@@ -8,6 +8,10 @@
 </head>
 <body>
     <h1>Dishes List</h1>
+    <h3>To update or add a dish, click the appropriate button and fill out the form below the table.</h3>
+    <h3>To delete a dish, click the appropriate button and confirm the prompt.</h3>
+    <button class="add-button" onclick="addDish()">Add New Dish</button>
+
     <table id="dishesTable" border="1">
         <thead>
             <tr>
@@ -22,15 +26,14 @@
             </tr>
         </thead>
         <tbody>
-            <!-- Dishes will be dynamically inserted here -->
+
         </tbody>
     </table>
 
-    <button class="add-button" onclick="addDish()">Add New Dish</button>
+   
 
 
-
-     <!-- Update Dish Form (Hidden by default) -->
+    <!-- Form to update or add a dish -->
      <div id="updateForm" class="hidden-form">
         <h2 id="updateDishHeading"></h2>
         <form id="updateDishForm">
@@ -66,10 +69,10 @@
             </div>
         
             <div class="form-group">
-                <button type="submit">Save Changes</button>
+                <button type="submit">Save</button>
             </div>
             <div class="form-group">
-                <button type="button" id="cancelButton" onclick="cancelUpdate()">Cancel</button>
+                <button type="button" id="cancelButton" onclick="cancelUpdateorAdd()">Cancel</button>
             </div>
         </form>
     </div>
@@ -81,6 +84,7 @@
 
         let addDishOptionSelected = false
 
+        // function to handle updating a dish. the user clicked on the Update button and is displayed with the Update Form
         async function updateDish(id, encodedName) {
             if (isDishSelectedForUpdating){
                 alert('You are already updating a dish, click Cancel in the form below the table to update a new dish')
@@ -118,6 +122,7 @@
             
             
         }
+        // function to handle adding a dish. the user clicked on the Add Dish button and is displayed with the Add Dish Form
         async function addDish() {
             if (isDishSelectedForUpdating){
                 alert('You are already updating a dish, click Cancel in the form below the table to add a new dish')
@@ -134,7 +139,7 @@
         
         }
 
-
+        // function to delete a dish
         async function deleteDish(id, encodedName) {
             const name = decodeURIComponent(encodedName);
 
@@ -160,7 +165,8 @@
             }
         }
 
-        function cancelUpdate() {
+        // function to cancel updating or adding dish, hides the form
+        function cancelUpdateorAdd() {
             isDishSelectedForUpdating = false
             currentDishId = null;
 
@@ -172,7 +178,7 @@
         }
 
 
-        
+        // function to fetch the list of dishes and display them in the table
         async function fetchDishes() {
             try {
                 const response = await fetch('/api/dishes');
@@ -209,7 +215,7 @@
             }
         }
 
-
+        // submit event listener for updating or adding dish
         document.getElementById("updateDishForm").addEventListener("submit", async function(event) {
             event.preventDefault();
 
@@ -223,20 +229,14 @@
 
             const cookingTimeInt = parseInt(cookingTime, 10);
 
-            if (!name || !ingredients.length || !cookingTimeInt || !origin || !difficulty || !preparationsSteps.length) {
-                alert("All fields must be filled out.");
-                return;
-            }
-
             if (addDishOptionSelected) {
 
+                // get an id not currently in use
                 const nextId = await getNextIdForDish()
 
                 const addDish = {
                     id: nextId, name, ingredients, cookingTime: cookingTimeInt, origin, difficulty, preparationsSteps
                 };
-
-                console.log('adding the dish: ', addDish)
 
                 try {
                     const response = await fetch(`/api/dishes/`, {
@@ -247,21 +247,22 @@
                         body: JSON.stringify(addDish)
                     });
 
+                    const data = await response.json()
+
                     if (response.ok) {
-                        alert("Dish added successfully");
+                        alert(data.message);
                         document.getElementById("updateForm").classList.add("hidden-form");
                         document.getElementById("updateDishForm").reset();
                         addDishOptionSelected = false;
                         fetchDishes();
                     } else {
-                        alert(`Failed to add dish`);
+                        alert(data.message);
                     }
                 } catch (error) {
                     console.error("Error adding dish:", error);
                 }
 
             } else if (isDishSelectedForUpdating) {
-                // Update existing dish
                 const updatedDish = {
                     name, ingredients, cookingTime, origin, difficulty, preparationsSteps
                 };
@@ -275,15 +276,17 @@
                         body: JSON.stringify(updatedDish)
                     });
 
+                    const data = await response.json()
+
                     if (response.ok) {
-                        alert("Dish updated successfully");
+                        alert(data.message);
                         document.getElementById("updateForm").classList.add("hidden-form");
                         document.getElementById("updateDishForm").reset();
-                        isDishSelectedForUpdating = false;  // Reset flag
-                        currentDishId = null;  // Clear current dish ID
-                        fetchDishes();  // Fetch updated dishes
+                        isDishSelectedForUpdating = false;
+                        currentDishId = null;
+                        fetchDishes();
                     } else {
-                        alert(`Failed to update dish:`);
+                        alert(data.message);
                     }
                 } catch (error) {
                     console.error("Error updating dish:", error);
@@ -294,9 +297,11 @@
         });
 
 
-        
+        // fetch the dishes everytime the page is loaded
         window.onload = fetchDishes;
 
+        // function to calculate the next available id for a new dish based on existing dish ids
+        // e.g. if we have ids 1,2,3,4,5 in use, it returns 6
         async function getNextIdForDish() {
             try {
                 const response = await fetch('/api/dishes');
@@ -312,8 +317,8 @@
 
                 return nextId.toString();
             } catch (error) {
-                console.error("Error fetching dishes or calculating next ID:", error);
-                return null; // or handle the error accordingly
+                console.error("Error calculating next ID:", error);
+                return null;
             }
         }
 
